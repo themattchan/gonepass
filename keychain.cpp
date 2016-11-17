@@ -127,69 +127,69 @@ RawKeyData parseEncryptedString(const std::string& data) {
 
 AgileKeychainMasterKey::AgileKeychainMasterKey(const json& input,
                                                const std::string masterPassword) {
-	if (!hasAllKeys(input, "data", "validation", "level", "identifier"))
-		throw std::runtime_error("Master key data does not have required fields");
+    if (!hasAllKeys(input, "data", "validation", "level", "identifier"))
+        throw std::runtime_error("Master key data does not have required fields");
 
-	int iter = hasAllKeys(input,"iterations") ? input["iterations"].get<int>() : 0;
-	if (iter < 1000) iter = 1000; // from 1password.html
+    int iter = hasAllKeys(input,"iterations") ? input["iterations"].get<int>() : 0;
+    if (iter < 1000) iter = 1000; // from 1password.html
 
     std::array<uint8_t, 32> master_key;
-	RawKeyData input_key_data = parseEncryptedString(input["data"]);
+    RawKeyData input_key_data = parseEncryptedString(input["data"]);
 
-	// Generate a 32-byte key from the master password and its salt
-	PKCS5_PBKDF2_HMAC_SHA1(masterPassword.c_str(),
-						   masterPassword.size(),
-						   std::get<0>(input_key_data).data(),
-						   std::get<0>(input_key_data).size(),
-						   iter,
-						   master_key.size(),
-						   master_key.data());
+    // Generate a 32-byte key from the master password and its salt
+    PKCS5_PBKDF2_HMAC_SHA1(masterPassword.c_str(),
+                           masterPassword.size(),
+                           std::get<0>(input_key_data).data(),
+                           std::get<0>(input_key_data).size(),
+                           iter,
+                           master_key.size(),
+                           master_key.data());
 
-	// This block decrypts the master key using the master password and stores it
-	// in ret. If the
-	// master key cannot be decrypted, it raises an error.
-	{
-		try {
-			EVPKey master_aes_key;
-			EVPIv master_aes_iv;
-			std::copy_n(master_key.begin(), 16, master_aes_key.begin());
-			std::copy(master_key.begin() + 16, master_key.end(), master_aes_iv.begin());
+    // This block decrypts the master key using the master password and stores it
+    // in ret. If the
+    // master key cannot be decrypted, it raises an error.
+    {
+        try {
+            EVPKey master_aes_key;
+            EVPIv master_aes_iv;
+            std::copy_n(master_key.begin(), 16, master_aes_key.begin());
+            std::copy(master_key.begin() + 16, master_key.end(), master_aes_iv.begin());
 
-			EVPCipher cipher(EVP_aes_128_cbc(), master_aes_key, master_aes_iv, false);
-			cipher.update(std::get<1>(input_key_data));
-			key_data = std::vector<uint8_t>(cipher.cbegin(), cipher.cend());
-		} catch (EVPCipherException& e) {
-			throw std::runtime_error("Couldn't decrypt master key!");
-		}
-	}
+            EVPCipher cipher(EVP_aes_128_cbc(), master_aes_key, master_aes_iv, false);
+            cipher.update(std::get<1>(input_key_data));
+            key_data = std::vector<uint8_t>(cipher.cbegin(), cipher.cend());
+        } catch (EVPCipherException& e) {
+            throw std::runtime_error("Couldn't decrypt master key!");
+        }
+    }
 
-	OpensslKeyData validation_keys;
-	auto validation_data = parseEncryptedString(input["validation"]);
-	if (std::get<2>(validation_data)) {
-		validation_keys = opensslKey(key_data, std::get<0>(validation_data));
-	} else {
-		validation_keys = opensslKeyNoSalt(key_data);
-	}
+    OpensslKeyData validation_keys;
+    auto validation_data = parseEncryptedString(input["validation"]);
+    if (std::get<2>(validation_data)) {
+        validation_keys = opensslKey(key_data, std::get<0>(validation_data));
+    } else {
+        validation_keys = opensslKeyNoSalt(key_data);
+    }
 
-	// This block decrypts the validation key and validates the master key with it
-	{
-		try {
-			EVPCipher cipher(EVP_aes_128_cbc(),
-							 std::get<0>(validation_keys),
-							 std::get<1>(validation_keys),
-							 false);
-			cipher.update(std::get<1>(validation_data));
-			cipher.finalize();
-			if (cipher.accumulator != key_data) {
-				throw std::runtime_error("Couldn't verify master key!");
-			}
-		} catch (EVPCipherException& e) {
-			throw std::runtime_error("Couldn't decrypt validation_key!");
-		}
-	}
+    // This block decrypts the validation key and validates the master key with it
+    {
+        try {
+            EVPCipher cipher(EVP_aes_128_cbc(),
+                             std::get<0>(validation_keys),
+                             std::get<1>(validation_keys),
+                             false);
+            cipher.update(std::get<1>(validation_data));
+            cipher.finalize();
+            if (cipher.accumulator != key_data) {
+                throw std::runtime_error("Couldn't verify master key!");
+            }
+        } catch (EVPCipherException& e) {
+            throw std::runtime_error("Couldn't decrypt validation_key!");
+        }
+    }
 
-	level = input["level"];
-	id = input["identifier"];
+    level = input["level"];
+    id = input["identifier"];
 }
 
 
