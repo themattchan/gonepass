@@ -10,6 +10,7 @@ public:
         set_column_spacing(3);
         set_margin_end(5);
         set_margin_start(5);
+        set_hexpand(false);
 
         if (data.sections.size() > 0) {
             for (const auto& section : data.sections) {
@@ -36,7 +37,9 @@ public:
         if (data.URLs.size() > 0) {
             attachSectionTitle("URLs");
             for (auto& url : data.URLs) {
-                auto url_button = Gtk::manage(new Gtk::LinkButton(url, url));
+                std::string truncated_link = url.substr(0,50);
+                if (url.size() > 50) truncated_link.append("...");
+                auto url_button = Gtk::manage(new Gtk::LinkButton(url, truncated_link));
                 attach(*url_button, 0, row_index++, 4, 1);
             }
         }

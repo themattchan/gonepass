@@ -16,6 +16,8 @@ public:
 
         add1(*searchList);
         add2(scroller);
+
+	scroller.set_policy(Gtk::POLICY_NEVER, Gtk::POLICY_AUTOMATIC);
         scroller.add(placeHolderWidget);
 
         show_all_children();
