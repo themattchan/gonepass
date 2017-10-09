@@ -1,12 +1,12 @@
 #pragma once
-#include <set>
 #include <functional>
+#include <set>
 
 #include <gtkmm.h>
 
-#include "keychain_container.h"
 #include "app_menu.h"
 #include "config_storage.h"
+#include "keychain_container.h"
 
 class MainWindow : public Gtk::ApplicationWindow {
 public:
@@ -16,6 +16,8 @@ public:
             {"_Load New Vault", [this]() { addNewVault(); }},
             {"_Refresh Vaults", [this]() { refreshVaults(); }},
             {"_Quit", [this]() { get_application()->quit(); }}};
+
+        set_default_geometry(800, 480);
 
         app_menu = std::unique_ptr<AppMenu>(new AppMenu(actions));
 
@@ -99,10 +101,10 @@ protected:
             std::stringstream title_builder;
             title_builder << path << " (master vault)";
             app_menu->prependVault(title_builder.str(), app_menu_select_cb);
+            master_vault = new_vault;
         } else
             app_menu->addVault(path, app_menu_select_cb);
-        if (master)
-            master_vault = new_vault;
+        app_menu_select_cb();
     }
 
     void lockVaults() {

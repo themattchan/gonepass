@@ -1,16 +1,16 @@
 #include <algorithm>
-#include <vector>
-#include <sstream>
 #include <fstream>
-#include <random>
 #include <glibmm.h>
 #include <openssl/bio.h>
 #include <openssl/buffer.h>
 #include <openssl/md5.h>
+#include <random>
+#include <sstream>
+#include <vector>
 
-#include "keychain.h"
 #include "evp_cipher.h"
 #include "helper.h"
+#include "keychain.h"
 
 namespace {
 using OpensslKeyData = std::pair<EVPKey, EVPIv>;
@@ -404,12 +404,14 @@ void Keychain::reloadItems() {
     }
 
     for (const auto& contents_item : contents_json) {
-        try {
-            loadItem(contents_item[0]);
-        } catch (std::exception& e) {
-            std::stringstream ss;
-            ss << "Error loading item " << contents_item[2] << ": " << e.what();
-            errorDialog(ss.str());
+        if(contents_item[1] != "system.Tombstone") {
+            try {
+                loadItem(contents_item[0]);
+            } catch (std::exception& e) {
+                std::stringstream ss;
+                ss << "Error loading item " << contents_item[2] << ": " << e.what();
+                errorDialog(ss.str());
+            }
         }
     }
 
