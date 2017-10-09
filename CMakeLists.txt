@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 3.1)
 
 # CMake include path
+INCLUDE(CMakeForceCompiler)
+CMAKE_FORCE_C_COMPILER(gcc GNU)
+CMAKE_FORCE_CXX_COMPILER(g++ GNU)
+
+set (CMAKE_C_COMPILER gcc)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake )
 
 project(gonepass)
